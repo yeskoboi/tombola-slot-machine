@@ -364,21 +364,19 @@ body.no-scroll {
 
 .jackpot-counter {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.7);
+    bottom: 30px;
+    right: 30px;
+    background: rgba(0, 0, 0, 0.85);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 1.2rem;
-    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
     z-index: 1000;
     backdrop-filter: blur(10px);
-}
-
-.jackpot-counter #jackpotCount {
-    color: #ffd700;
-    font-size: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 0.3px;
 }
 
 /* ========================================

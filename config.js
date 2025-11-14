@@ -352,10 +352,18 @@ function updateJackpotCounter() {
         }
     });
     
-    // Update UI
-    const counterElement = document.getElementById('jackpotCount');
+    // Update UI mit natürlicherem Text
+    const counterElement = document.getElementById('jackpotCounter');
     if (counterElement) {
-        counterElement.textContent = availableToday;
+        let text = '';
+        if (availableToday === 0) {
+            text = 'Heute keine Jackpots mehr 🤷';
+        } else if (availableToday === 1) {
+            text = 'Noch 1 Jackpot zu gewinnen! 🚨';
+        } else {
+            text = `Heute noch ${availableToday} Jackpots! 🤯`;
+        }
+        counterElement.textContent = text;
     }
     
     return availableToday;
@@ -375,5 +383,11 @@ function resetDailyWins() {
 (function init() {
     console.log(`[CONFIG] ${CONFIG.game.dailyWins.length} Tagesgewinne konfiguriert`);
     showDailyWinStatus();
-    updateJackpotCounter();
+    
+    // Update Counter wenn DOM bereit ist
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateJackpotCounter);
+    } else {
+        updateJackpotCounter();
+    }
 })();
