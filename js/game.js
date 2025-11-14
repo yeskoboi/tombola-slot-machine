@@ -146,6 +146,8 @@ class SlotMachine {
         if (this.isSpinning) return;
         this.isSpinning = true;
         
+        this.callback = callback;
+        
         // Animiere jeden Slot
         this.slots.forEach((slot, index) => {
             const delay = index * 100; // Gestaffelter Start
@@ -154,9 +156,9 @@ class SlotMachine {
             }, delay);
         });
         
-        // Callback nach Spin-Dauer
+        // Rufe Callback nach Spin-Dauer auf
         setTimeout(() => {
-            if (callback) callback();
+            if (this.callback) this.callback();
         }, CONFIG.timing.spinDuration);
     }
     
@@ -166,12 +168,18 @@ class SlotMachine {
     animateSlot(slot) {
         // Berechne Item-Höhe dynamisch aus aktueller Slot-Höhe
         const itemHeight = slot.children[0].offsetHeight;
-        const totalItems = slot.children.length;
-        const scrollDistance = itemHeight * totalItems * 0.8;
+        const symbolCount = CONFIG.assets.symbolCount;
         
-        // Start-Position
+        // Zufällige Startposition (0-2 Symbole nach unten)
+        const randomStart = Math.floor(Math.random() * symbolCount) * itemHeight;
+        
+        // Scrolle durch mehrere Durchläufe (z.B. 10 volle Durchläufe)
+        const fullCycles = 10;
+        const scrollDistance = randomStart + (itemHeight * symbolCount * fullCycles);
+        
+        // Start-Position (zufällig)
         slot.style.transition = 'none';
-        slot.style.transform = 'translateY(0)';
+        slot.style.transform = `translateY(-${randomStart}px)`;
         
         // Erzwinge Reflow
         slot.offsetHeight;
@@ -186,15 +194,16 @@ class SlotMachine {
      */
     stop(winArray) {
         this.slots.forEach((slot, index) => {
-            const targetSymbol = winArray[index] - 1; // 0-basiert
-            // Berechne Item-Höhe dynamisch
+            const targetSymbol = winArray[index]; // Schon 0-basiert!
             const itemHeight = slot.children[0].offsetHeight;
+            const symbolCount = CONFIG.assets.symbolCount;
             
-            // Berechne exakte Position für das Zielsymbol
-            const targetPosition = targetSymbol * itemHeight;
+            // Berechne Position: 10 volle Zyklen + das Zielsymbol
+            const fullCycles = 10;
+            const targetPosition = (symbolCount * fullCycles + targetSymbol) * itemHeight;
             
             setTimeout(() => {
-                slot.style.transition = 'transform 500ms ease-out';
+                slot.style.transition = 'transform 800ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
                 slot.style.transform = `translateY(-${targetPosition}px)`;
             }, index * 100);
         });
@@ -306,10 +315,11 @@ function getSlotWinArray(codeString) {
         digits = ("00" + codeString).split('');
     }
     
+    // Direkte Indices ohne +1, da Symbole 0-basiert sind
     return [
-        parseInt(digits[0]) + 1,
-        parseInt(digits[1]) + 1,
-        parseInt(digits[2]) + 1
+        parseInt(digits[0]),
+        parseInt(digits[1]),
+        parseInt(digits[2])
     ];
 }
 
@@ -322,7 +332,9 @@ function handleJackpot() {
     const stage = document.getElementById('buzzerStage');
     const label = document.getElementById('framelabel');
     
-    if (stage) stage.classList.add('wiggle');
+    // Sanfte Pulsier-Animation nur bei Jackpot
+    if (stage) stage.classList.add('pulse');
+    
     if (label) {
         label.style.backgroundImage = `url(${CONFIG.assets.text.jackpot})`;
     }
@@ -341,10 +353,9 @@ function handleJackpot() {
 function handleWin() {
     clearListeners();
     
-    const stage = document.getElementById('buzzerStage');
     const label = document.getElementById('framelabel');
     
-    if (stage) stage.classList.add('wiggle');
+    // Kein Frame-Wiggle mehr!
     if (label) {
         label.style.backgroundImage = `url(${CONFIG.assets.text.win})`;
     }

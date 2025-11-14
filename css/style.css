@@ -330,6 +330,21 @@ body.no-scroll {
     }
 }
 
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.95;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 /* Animation Klassen */
 .wiggle {
     animation: wiggle 2s linear infinite;
@@ -339,8 +354,8 @@ body.no-scroll {
     animation: rotate 2s linear infinite;
 }
 
-#buzzerStage.wiggle {
-    animation: wiggle 3s ease-in-out 1;
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
 }
 
 /* ========================================
