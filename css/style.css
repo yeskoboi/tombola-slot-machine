@@ -208,7 +208,7 @@ body.no-scroll {
 
 .fancy {
     position: absolute;
-    top: 35%;  /* Relativ zum Frame */
+    top: 33%;  /* Relativ zum Frame */
     left: 50%;
     transform: translateX(-50%);
     width: 64%;  /* 3x 17.65% + 2x 5.53% gap = 64% */
@@ -256,6 +256,12 @@ body.no-scroll {
     height: auto;
     max-height: 100%;
     object-fit: contain;
+}
+
+/* Padding nur für SVG-Symbole - sie haben meist keinen eingebauten Rand */
+.fancy .slot li img[src$=".svg"] {
+    padding: 15%;
+    box-sizing: border-box;
 }
 
 .fancy .slot li span {
