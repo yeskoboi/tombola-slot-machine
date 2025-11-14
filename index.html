@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tombola Buzzer</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    
+    <!-- Howler.js für Sound -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    
+    <!-- Konfiguration (ZUERST laden!) -->
+    <script src="config.js"></script>
+</head>
+<body id="mainStage">
+
+<!-- Hauptbühne -->
+<div class="wrapper buzzer__container rewind" id="buzzerStage">
+    
+    <!-- Background (kann Video sein) -->
+    <div class="background__container" id="background">
+        <!-- Wird dynamisch geladen: img oder video -->
+    </div>
+    
+    <!-- Slot Machine -->
+    <div class="fancy" id="fancySlots">
+        <div class="jSlots-wrapper">
+            <!-- Slot 1 -->
+            <ul class="slot" data-slot="1">
+                <!-- Symbole werden dynamisch geladen -->
+            </ul>
+            
+            <!-- Slot 2 -->
+            <ul class="slot" data-slot="2">
+                <!-- Symbole werden dynamisch geladen -->
+            </ul>
+            
+            <!-- Slot 3 -->
+            <ul class="slot" data-slot="3">
+                <!-- Symbole werden dynamisch geladen -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Animationen für jedes Loch (können Videos sein) -->
+    <div class="slot-animations__container rewind" id="slotAnimations">
+        <div class="slot-animation slot-animation--1" id="slotAnim1"></div>
+        <div class="slot-animation slot-animation--2" id="slotAnim2"></div>
+        <div class="slot-animation slot-animation--3" id="slotAnim3"></div>
+    </div>
+
+    <!-- Haupt-Visual (Frame mit 3 Löchern, kann Video sein) -->
+    <div class="frame__container" id="frame">  
+        <div id="framelabel" class="frame__label"></div>
+    </div>
+    
+    <!-- Jackpot Counter (unten rechts) -->
+    <div class="jackpot-counter" id="jackpotCounter">
+        <span id="jackpotCount">-</span> Jackpot(s)
+    </div>
+
+</div>
+
+<!-- Game Logic -->
+<script src="js/game.js"></script>
+
+</body>
+</html>

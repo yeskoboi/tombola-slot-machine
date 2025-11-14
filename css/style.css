@@ -1,0 +1,379 @@
+/**
+ * Tombola Slot Machine Styles
+ * Relatives Layout-System basierend auf Frame-Seitenverhältnis
+ */
+
+/* ========================================
+   GLOBAL STYLES
+   ======================================== */
+
+:root {
+    --vw: 100vw;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #032b23;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.no-scroll {
+    overflow: hidden !important;
+}
+
+/* ========================================
+   WRAPPER & CONTAINERS
+   ======================================== */
+
+.wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    animation-duration: 1.4s; 
+    animation-fill-mode: both; 
+    animation-name: bounceIn;
+    animation-delay: .2s;
+}
+
+.buzzer__container {
+    position: relative;
+    /* Container passt sich an verfügbaren Platz an, aber behält Seitenverhältnis */
+    width: 90vw;
+    height: calc(90vw * 956 / 1700);  /* Höhe basierend auf Breite */
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+/* Wenn Höhe limitierend ist, passe Breite an */
+@media (aspect-ratio > 1700/956) {
+    .buzzer__container {
+        width: calc(90vh * 1700 / 956);
+        height: 90vh;
+    }
+}
+
+/* ========================================
+   BACKGROUND (kann Bild oder Video sein)
+   ======================================== */
+
+.background__container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.background__container img,
+.background__container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ========================================
+   FRAME (Haupt-Visual mit 3 Slot-Löchern)
+   Kann auch Video sein!
+   ======================================== */
+
+.frame__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    overflow: visible;
+}
+
+/* Frame als Bild */
+.frame__container.frame--image {
+    background: url("../assets/images/frame.png") center center;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* Frame als Video */
+.frame__container video {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+.frame__label {
+    background: url("../assets/text/idle.svg") center center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute;
+    top: 15%;  /* Relativ zum Frame */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 8%;
+    transition: background-image 0.3s ease;
+    z-index: 60;
+}
+
+/* ========================================
+   SLOT ANIMATIONS (Eine pro Slot/Loch)
+   Können Bilder ODER Videos sein
+   ======================================== */
+
+.slot-animations__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30;
+    pointer-events: none;
+}
+
+.slot-animation {
+    position: absolute;
+    display: block;
+    overflow: hidden;
+    z-index: 30;
+    width: 17.65%;  /* 600px von 3400px = 17.65% */
+    height: 31.36%; /* 600px von 1913px = 31.36% */
+}
+
+/* Position für Slot 1 (links) - relativ zum Frame */
+.slot-animation--1 {
+    top: 35%;
+    left: 18%;
+}
+
+/* Position für Slot 2 (mitte) - relativ zum Frame */
+.slot-animation--2 {
+    top: 35%;
+    left: 50%;
+    margin-left: -8.825%;  /* Halbe Breite: 17.65% / 2 */
+}
+
+/* Position für Slot 3 (rechts) - relativ zum Frame */
+.slot-animation--3 {
+    top: 35%;
+    right: 18%;
+}
+
+/* Wenn es ein Bild ist → rotieren */
+.slot-animation.animates--rotate {
+    animation: rotate 2s linear infinite;
+    animation-play-state: paused;
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Wenn es ein Video ist → einfach abspielen */
+.slot-animation video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Animation aktivieren beim Spielen */
+.slot-animations__container.playing .slot-animation.animates--rotate {
+    animation-play-state: running;
+}
+
+/* Rewind-Animation */
+.slot-animations__container.rewind .slot-animation.animates--rotate {
+    animation: rewind 0.5s linear infinite;
+    animation-play-state: running;
+}
+
+/* Individuelle Geschwindigkeiten möglich */
+.slot-animation--1.animates--rotate { animation-duration: 2s; }
+.slot-animation--2.animates--rotate { animation-duration: 3s; }
+.slot-animation--3.animates--rotate { animation-duration: 4s; }
+
+/* ========================================
+   SLOT MACHINE
+   ======================================== */
+
+.fancy {
+    position: absolute;
+    top: 35%;  /* Relativ zum Frame */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 64%;  /* 3x 17.65% + 2x 5.53% gap = 64% */
+    height: 31.36%;  /* 600px von 1913px = 31.36% vom Container */
+    text-align: left;
+    display: none;
+    z-index: 10;  /* Hinter Frame (50) */
+}
+
+.fancy.running {
+    display: block;
+}
+
+.fancy .jSlots-wrapper {
+    overflow: hidden;
+    height: 100%;  /* Volle Höhe von .fancy */
+    border: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-column-gap: 5.53%;  /* 188px von 3400px = 5.53% vom Container */
+    width: 100%;
+}
+
+.fancy .slot {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /* Grid verteilt Breite automatisch */
+    height: 100%;
+}
+
+.fancy .slot li {
+    width: 100%;
+    text-align: center;
+    aspect-ratio: 1 / 1;  /* Quadratisch - Höhe passt sich an Breite an */
+    color: #000;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fancy .slot li img {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.fancy .slot li span {
+    display: block;
+    width: 100%;
+}
+
+.fancy .slot li:nth-child(n) {
+    background-color: transparent;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rewind {
+    from {
+        transform: rotate(360deg);
+    }
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    40% {
+        opacity: 1; 
+        transform: translateY(10px);
+    }
+    70% {
+        transform: translateY(-5px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes wiggle {
+    0%, 7% {
+        transform: rotateZ(0);
+    }
+    15% {
+        transform: rotateZ(-12deg);
+    }
+    20% {
+        transform: rotateZ(9deg);
+    }
+    25% {
+        transform: rotateZ(-9deg);
+    }
+    30% {
+        transform: rotateZ(6deg);
+    }
+    35% {
+        transform: rotateZ(-4deg);
+    }
+    40%, 100% {
+        transform: rotateZ(0);
+    }
+}
+
+/* Animation Klassen */
+.wiggle {
+    animation: wiggle 2s linear infinite;
+}
+
+.rotate {
+    animation: rotate 2s linear infinite;
+}
+
+#buzzerStage.wiggle {
+    animation: wiggle 3s ease-in-out 1;
+}
+
+/* ========================================
+   JACKPOT COUNTER (unten rechts)
+   ======================================== */
+
+.jackpot-counter {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.jackpot-counter #jackpotCount {
+    color: #ffd700;
+    font-size: 1.5rem;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
