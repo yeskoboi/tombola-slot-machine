@@ -24,35 +24,34 @@ const CONFIG = {
         winCodes: ['000', '111'],  // → zeigt 3x symbol_1.svg oder 3x symbol_2.svg
         
         // Slot-Codes für Nieten (keine drei gleichen)
-        loseCodes: ['102', '031', '203', '002', '123', '213', '312', '132', '231', '321'],
+        loseCodes: ['012', '021', '102', '120', '201', '210'],
         
         // Tagesgewinne (einfach Daten hier eintragen!)
         dailyWins: [
-            '2025-11-13',
             '2025-12-01',
             '2025-12-02',
             '2025-12-03',
             '2025-12-04',
             '2025-12-05',
+            '2025-12-08',
             '2025-12-09',
-            '2025-12-09',  // 2x am gleichen Tag = 2 Jackpots möglich
+            '2025-12-09',
             '2025-12-10',
             '2025-12-11',
+            '2025-12-11',
             '2025-12-12',
-            '2025-12-13',
+            '2025-12-15',
             '2025-12-16',
             '2025-12-16',
             '2025-12-17',
             '2025-12-18',
+            '2025-12-18',
             '2025-12-19',
-            '2025-12-20',
+            '2025-12-22',
+            '2025-12-22',
             '2025-12-23',
             '2025-12-23',
-            '2025-12-24',
-            '2025-12-27',
-            '2025-12-30',
-            '2025-12-31',
-            '2026-01-02'
+            '2025-12-24'
         ]
     },
     
@@ -60,6 +59,11 @@ const CONFIG = {
     assets: {
         // Anzahl Symbole
         symbolCount: 3,
+        
+        // Layout-Optionen
+        layout: {
+            fullscreenFrame: true  // true = Frame bildfüllend wie Background, false = Frame kleiner zentriert
+        },
         
         // Sounds
         sounds: {
@@ -131,19 +135,27 @@ function generateJackpotTime() {
 }
 
 /**
- * Lädt oder generiert ALLE Jackpot-Zeitpunkte für heute
- * Wenn mehrere Gewinne am gleichen Tag → mehrere Zeiten!
+ * Indizes aller Tagesgewinne von heute (gewonnene und offene)
+ */
+function getTodayIndices() {
+    const today = new Date().toISOString().split('T')[0];
+    const indices = [];
+    CONFIG.game.dailyWins.forEach((date, index) => {
+        if (date === today) indices.push(index);
+    });
+    return indices;
+}
+
+/**
+ * Lädt oder generiert die Jackpot-Zeitpunkte für heute.
+ * times[k] gehört zu getTodayIndices()[k] und bleibt den ganzen Tag stabil,
+ * auch nachdem ein Jackpot gewonnen wurde.
  */
 function getJackpotTimes() {
     const today = new Date().toISOString().split('T')[0];
-    const wonDates = loadWonDates();
+    const count = getTodayIndices().length;
     
-    // Wie viele nicht-gewonnene Gewinne gibt es für heute?
-    const availableToday = CONFIG.game.dailyWins.filter((date, index) => {
-        return date === today && !wonDates.includes(`${date}_${index}`);
-    });
-    
-    if (availableToday.length === 0) {
+    if (count === 0) {
         return []; // Keine Gewinne für heute
     }
     
@@ -152,8 +164,7 @@ function getJackpotTimes() {
     if (stored) {
         try {
             const data = JSON.parse(stored);
-            // Ist es noch der gleiche Tag?
-            if (data.date === today && data.times.length === availableToday.length) {
+            if (data.date === today && data.times.length === count) {
                 return data.times;
             }
         } catch (e) {
@@ -161,13 +172,11 @@ function getJackpotTimes() {
         }
     }
     
-    // Neuer Tag oder falsche Anzahl → generiere neue Zeitpunkte
+    // Neuer Tag oder Anzahl geändert → neue Zeitpunkte generieren
     const times = [];
-    for (let i = 0; i < availableToday.length; i++) {
+    for (let i = 0; i < count; i++) {
         times.push(generateJackpotTime());
     }
-    
-    // Sortiere Zeiten (früheste zuerst)
     times.sort((a, b) => a - b);
     
     localStorage.setItem(STORAGE_KEY_JACKPOT_TIMES, JSON.stringify({
@@ -216,58 +225,26 @@ function saveWonDate(dateWithIndex) {
 }
 
 /**
- * Prüft ob JETZT ein Jackpot-Zeitpunkt ist
+ * Prüft ob JETZT ein Jackpot fällig ist
  * Unterstützt mehrere Jackpots pro Tag!
  */
 function checkDailyWin() {
     const now = Date.now();
-    const today = new Date().toISOString().split('T')[0];
     const wonDates = loadWonDates();
+    const indices = getTodayIndices();
     const jackpotTimes = getJackpotTimes();
     
-    if (jackpotTimes.length === 0) {
-        return false; // Kein Jackpot heute
-    }
-    
-    // Finde alle heute verfügbaren Gewinne (noch nicht gewonnen)
-    const availableIndices = [];
-    CONFIG.game.dailyWins.forEach((date, index) => {
-        if (date === today && !wonDates.includes(`${date}_${index}`)) {
-            availableIndices.push(index);
-        }
-    });
-    
-    if (availableIndices.length === 0) {
-        return false; // Alle heutigen Jackpots schon gewonnen
-    }
-    
-    // Prüfe ob wir nach einem der Jackpot-Zeitpunkte sind
-    for (let i = 0; i < jackpotTimes.length; i++) {
-        if (now >= jackpotTimes[i] && i < availableIndices.length) {
-            // JACKPOT!
-            const wonIndex = availableIndices[i];
-            const wonDate = CONFIG.game.dailyWins[wonIndex];
-            saveWonDate(`${wonDate}_${wonIndex}`);
-            
-            const timeStr = new Date(jackpotTimes[i]).toLocaleTimeString('de-CH', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            console.log(`[JACKPOT] Jackpot ${i + 1}/${jackpotTimes.length} gewonnen! (Zeit: ${timeStr})`);
-            
-            // Update Counter im Browser
+    for (let k = 0; k < indices.length; k++) {
+        const index = indices[k];
+        const key = `${CONFIG.game.dailyWins[index]}_${index}`;
+        if (wonDates.includes(key)) continue;
+        
+        if (now >= jackpotTimes[k]) {
+            saveWonDate(key);
+            console.log(`[JACKPOT] Jackpot ${k + 1}/${indices.length} gewonnen!`);
             updateJackpotCounter();
-            
             return true;
         }
-    }
-    
-    // Noch nicht Zeit für nächsten Jackpot
-    const nextJackpotIndex = availableIndices.length - jackpotTimes.length + 
-                             jackpotTimes.findIndex(time => now < time);
-    if (nextJackpotIndex >= 0 && nextJackpotIndex < jackpotTimes.length) {
-        const minutesLeft = Math.floor((jackpotTimes[nextJackpotIndex] - now) / 60000);
-        console.log(`[JACKPOT] Naechster Jackpot in ca. ${minutesLeft} Minuten`);
     }
     
     return false;

@@ -16,13 +16,13 @@
 </head>
 <body id="mainStage">
 
+<!-- Background (kann Video sein) - AUSSERHALB des Containers -->
+<div class="background__container" id="background">
+    <!-- Wird dynamisch geladen: img oder video -->
+</div>
+
 <!-- Hauptbühne -->
-<div class="wrapper buzzer__container rewind" id="buzzerStage">
-    
-    <!-- Background (kann Video sein) -->
-    <div class="background__container" id="background">
-        <!-- Wird dynamisch geladen: img oder video -->
-    </div>
+<div class="wrapper buzzer__container" id="buzzerStage">
     
     <!-- Slot Machine -->
     <div class="fancy" id="fancySlots">
@@ -45,7 +45,7 @@
     </div>
 
     <!-- Animationen für jedes Loch (können Videos sein) -->
-    <div class="slot-animations__container rewind" id="slotAnimations">
+    <div class="slot-animations__container" id="slotAnimations">
         <div class="slot-animation slot-animation--1" id="slotAnim1"></div>
         <div class="slot-animation slot-animation--2" id="slotAnim2"></div>
         <div class="slot-animation slot-animation--3" id="slotAnim3"></div>

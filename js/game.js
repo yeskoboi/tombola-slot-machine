@@ -9,14 +9,21 @@ let slotMachine = null;
 /**
  * Initialisierung beim Laden der Seite
  */
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
     console.log('🎰 Tombola Game initialized (Vanilla JS Mode)');
     
-    // Lade Assets dynamisch
-    loadBackground();
-    loadFrame();
-    loadSlotAnimations();
-    loadSymbols();
+    // Setze Layout-Modus
+    const stage = document.getElementById('buzzerStage');
+    if (stage && CONFIG.assets.layout.fullscreenFrame) {
+        stage.classList.add('fullscreen');
+        console.log('📺 Fullscreen frame mode enabled');
+    }
+    
+    // Lade Assets dynamisch (async)
+    await loadBackground();
+    await loadFrame();
+    await loadSlotAnimations();
+    await loadSymbols();
     
     // Initialisiere Slot Machine
     slotMachine = new SlotMachine();
@@ -25,14 +32,65 @@ document.addEventListener("DOMContentLoaded", function () {
     updateViewportWidth();
     window.addEventListener("resize", handleResize);
     
-    // Rewind-Animation starten
-    window.setTimeout(clearRewind, CONFIG.timing.rewindDuration);
+    // Zeige Idle-Text mit Blink-Animation (statt Kassetten-Animation)
+    showIdleText();
+    
+    // Warte bis Animation fertig ist, dann bereit zum Spielen
+    window.setTimeout(clearRewind, 2500); // 800ms delay + 1200ms animation + 500ms buffer
 });
+
+/**
+ * Versucht Asset mit verschiedenen Dateiendungen zu laden
+ * Für Audio: Test ob Browser das Format abspielen kann
+ */
+async function tryLoadAsset(basePath, extensions = ['svg', 'png', 'jpg', 'jpeg']) {
+    const basePathWithoutExt = basePath.replace(/\.[^.]+$/, '');
+    const isAudio = extensions.some(ext => ['mp3', 'm4a', 'wav', 'ogg', 'webm'].includes(ext));
+    
+    // Versuche jede Dateiendung
+    for (const ext of extensions) {
+        const testPath = `${basePathWithoutExt}.${ext}`;
+        
+        try {
+            if (isAudio) {
+                // Für Audio: Teste mit Audio-Element ob Browser das Format unterstützt
+                await new Promise((resolve, reject) => {
+                    const audio = new Audio();
+                    audio.oncanplaythrough = resolve;
+                    audio.onerror = reject;
+                    audio.src = testPath;
+                    audio.load();
+                });
+                
+                console.log(`✓ Found audio: ${testPath}`);
+                return testPath;
+            } else {
+                // Für Bilder: Test mit Image-Object
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = testPath;
+                });
+                
+                console.log(`✓ Found asset: ${testPath}`);
+                return testPath;
+            }
+        } catch (e) {
+            // Datei existiert nicht oder Format nicht unterstützt, nächste probieren
+            console.log(`✗ Not found/supported: ${testPath}`);
+        }
+    }
+    
+    // Fallback: originalen Pfad zurückgeben
+    console.warn(`⚠ Using fallback path: ${basePath}`);
+    return basePath;
+}
 
 /**
  * Lädt Background (Bild oder Video)
  */
-function loadBackground() {
+async function loadBackground() {
     const container = document.getElementById('background');
     if (!container) return;
     
@@ -48,8 +106,9 @@ function loadBackground() {
         video.playsInline = true;
         container.appendChild(video);
     } else {
+        const finalPath = await tryLoadAsset(bgPath, ['png', 'jpg', 'jpeg', 'svg']);
         const img = document.createElement('img');
-        img.src = bgPath;
+        img.src = finalPath;
         img.alt = 'Background';
         container.appendChild(img);
     }
@@ -58,7 +117,7 @@ function loadBackground() {
 /**
  * Lädt Frame (Bild oder Video)
  */
-function loadFrame() {
+async function loadFrame() {
     const container = document.getElementById('frame');
     if (!container) return;
     
@@ -74,24 +133,27 @@ function loadFrame() {
         video.playsInline = true;
         container.appendChild(video);
     } else {
+        const finalPath = await tryLoadAsset(framePath, ['png', 'jpg', 'jpeg', 'svg']);
         container.classList.add('frame--image');
-        container.style.backgroundImage = `url(${framePath})`;
+        container.style.backgroundImage = `url(${finalPath})`;
     }
 }
 
 /**
  * Lädt Slot-Animationen (Bilder oder Videos)
  */
-function loadSlotAnimations() {
+async function loadSlotAnimations() {
     const anims = CONFIG.assets.images.slotAnimations;
     
-    [
+    const animConfigs = [
         { num: 1, path: anims.slot1 },
         { num: 2, path: anims.slot2 },
         { num: 3, path: anims.slot3 }
-    ].forEach(({ num, path }) => {
+    ];
+    
+    for (const { num, path } of animConfigs) {
         const container = document.getElementById(`slotAnim${num}`);
-        if (!container || !path) return;
+        if (!container || !path) continue;
         
         const isVideo = /\.(mp4|webm|ogg)$/i.test(path);
         
@@ -104,29 +166,42 @@ function loadSlotAnimations() {
             video.playsInline = true;
             container.appendChild(video);
         } else {
+            const finalPath = await tryLoadAsset(path, ['png', 'gif', 'jpg', 'jpeg', 'svg']);
             container.classList.add('animates--rotate');
-            container.style.backgroundImage = `url(${path})`;
+            container.style.backgroundImage = `url(${finalPath})`;
         }
-    });
+    }
 }
 
 /**
  * Lädt die Symbole dynamisch in die Slots
  */
-function loadSymbols() {
+async function loadSymbols() {
     const slots = document.querySelectorAll('.slot');
     
-    slots.forEach(slot => {
+    // Lade alle Symbol-Pfade mit korrekten Endungen
+    const symbolPaths = await Promise.all(
+        CONFIG.assets.images.symbols.map(path => 
+            tryLoadAsset(path, ['svg', 'png', 'jpg', 'jpeg'])
+        )
+    );
+    
+    slots.forEach((slot, slotIndex) => {
         slot.innerHTML = '';
         
         // Erstelle genug Symbole für Scroll-Effekt (mehrere Durchläufe)
         for (let i = 0; i < 20; i++) {
-            CONFIG.assets.images.symbols.forEach(symbolPath => {
+            symbolPaths.forEach(symbolPath => {
                 const li = document.createElement('li');
                 li.innerHTML = `<span class="slot-item"><img src="${symbolPath}" alt="Symbol"></span>`;
                 slot.appendChild(li);
             });
         }
+        
+        // Setze initiale Position: Slot 1 = Symbol 0, Slot 2 = Symbol 1, Slot 3 = Symbol 2
+        const itemHeight = slot.children[0].offsetHeight;
+        const initialPosition = slotIndex * itemHeight; // 0, 1, 2 * itemHeight
+        slot.style.transform = `translateY(-${initialPosition}px)`;
     });
 }
 
@@ -215,15 +290,31 @@ class SlotMachine {
 }
 
 /**
+ * Zeigt Idle-Text mit Blink-Animation beim Start
+ */
+async function showIdleText() {
+    const label = document.getElementById('framelabel');
+    if (!label) return;
+    
+    const idlePath = await tryLoadAsset(CONFIG.assets.text.idle, ['png', 'svg', 'jpg', 'jpeg']);
+    label.style.backgroundImage = `url(${idlePath})`;
+    
+    // Langsame Scale-Animation mit Verzögerung
+    setTimeout(() => {
+        label.style.animation = 'idleBlink 1.2s ease-in-out';
+        
+        // Animation nach Ablauf entfernen
+        setTimeout(() => {
+            label.style.animation = '';
+        }, 1200);
+    }, 800); // Verzögerung vor Start der Animation
+}
+
+/**
  * Startet das Spiel nach der Rewind-Animation
  */
 function clearRewind() {
-    const animations = document.getElementById('slotAnimations');
-    const stage = document.getElementById('buzzerStage');
-    
-    if (animations) animations.classList.remove('rewind');
-    if (stage) stage.classList.remove('rewind');
-    
+    // Kein Rewind mehr nötig - nur Event Listener aktivieren
     document.addEventListener('keydown', function(event) {
         if (!isPlaying) {
             event.stopPropagation();
@@ -244,6 +335,15 @@ function startSlots() {
     isPlaying = true;
     
     document.removeEventListener("keydown", resetTimer);
+    
+    // Blende Idle-Text aus
+    const label = document.getElementById('framelabel');
+    if (label) {
+        label.style.opacity = '0';
+        label.style.transition = 'opacity 0.3s ease';
+        // Stelle sicher, dass Transform erhalten bleibt
+        label.style.transform = 'translateX(-50%)';
+    }
     
     const animations = document.getElementById('slotAnimations');
     if (animations) {
@@ -326,17 +426,20 @@ function getSlotWinArray(codeString) {
 /**
  * Behandelt Jackpot-Gewinn
  */
-function handleJackpot() {
+async function handleJackpot() {
     clearListeners();
     
-    const stage = document.getElementById('buzzerStage');
     const label = document.getElementById('framelabel');
     
-    // Sanfte Pulsier-Animation nur bei Jackpot
-    if (stage) stage.classList.add('pulse');
-    
     if (label) {
-        label.style.backgroundImage = `url(${CONFIG.assets.text.jackpot})`;
+        const jackpotPath = await tryLoadAsset(CONFIG.assets.text.jackpot, ['png', 'svg', 'jpg', 'jpeg']);
+        label.style.backgroundImage = `url(${jackpotPath})`;
+        label.style.opacity = '1';
+        label.style.transition = 'opacity 0.5s ease';
+        label.style.transform = 'translateX(-50%)';  // Stelle sicher, dass Transform erhalten bleibt
+        
+        // Pulse-Animation für Jackpot-Text
+        label.classList.add('pulse');
     }
     
     doSlotWiggle();
@@ -350,14 +453,18 @@ function handleJackpot() {
 /**
  * Behandelt normalen Gewinn
  */
-function handleWin() {
+async function handleWin() {
     clearListeners();
     
     const label = document.getElementById('framelabel');
     
     // Kein Frame-Wiggle mehr!
     if (label) {
-        label.style.backgroundImage = `url(${CONFIG.assets.text.win})`;
+        const winPath = await tryLoadAsset(CONFIG.assets.text.win, ['png', 'svg', 'jpg', 'jpeg']);
+        label.style.backgroundImage = `url(${winPath})`;
+        label.style.opacity = '1';
+        label.style.transition = 'opacity 0.5s ease';
+        label.style.transform = 'translateX(-50%)';  // Stelle sicher, dass Transform erhalten bleibt
     }
     
     doSlotWiggle();
@@ -371,12 +478,16 @@ function handleWin() {
 /**
  * Behandelt Verlust
  */
-function handleLose() {
+async function handleLose() {
     clearListeners();
     
     const label = document.getElementById('framelabel');
     if (label) {
-        label.style.backgroundImage = `url(${CONFIG.assets.text.lose})`;
+        const losePath = await tryLoadAsset(CONFIG.assets.text.lose, ['png', 'svg', 'jpg', 'jpeg']);
+        label.style.backgroundImage = `url(${losePath})`;
+        label.style.opacity = '1';
+        label.style.transition = 'opacity 0.5s ease';
+        label.style.transform = 'translateX(-50%)';  // Stelle sicher, dass Transform erhalten bleibt
     }
     
     // KEINE Wiggle-Animation bei Lose!
@@ -402,14 +513,17 @@ function doSlotWiggle() {
 /**
  * Spielt einen Sound ab
  */
-function playSound(soundPath) {
+async function playSound(soundPath) {
     if (typeof Howl === 'undefined') {
         console.warn('Howler.js nicht geladen');
         return;
     }
     
+    // Versuche verschiedene Audio-Formate zu finden
+    const finalPath = await tryLoadAsset(soundPath, ['mp3', 'm4a', 'wav', 'ogg', 'webm']);
+    
     const sound = new Howl({
-        src: [soundPath],
+        src: [finalPath],
         html5: true,
         volume: 1.0,
         onload: function() {

@@ -17,7 +17,7 @@ body {
     height: 100vh;
     width: 100vw;
     overflow: hidden;
-    background: #032b23;
+    background: transparent;  /* Transparent statt #032b23 */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     display: flex;
     align-items: center;
@@ -40,10 +40,6 @@ body.no-scroll {
     align-items: center;
     justify-content: center;
     opacity: 1;
-    animation-duration: 1.4s; 
-    animation-fill-mode: both; 
-    animation-name: bounceIn;
-    animation-delay: .2s;
 }
 
 .buzzer__container {
@@ -55,11 +51,24 @@ body.no-scroll {
     max-height: 90vh;
 }
 
+/* Bildfüllender Modus - Frame nutzt vollen Viewport */
+.buzzer__container.fullscreen {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
 /* Wenn Höhe limitierend ist, passe Breite an */
 @media (aspect-ratio > 1700/956) {
     .buzzer__container {
         width: calc(90vh * 1700 / 956);
         height: 90vh;
+    }
+    
+    .buzzer__container.fullscreen {
+        width: 100vw;
+        height: 100vh;
     }
 }
 
@@ -99,11 +108,16 @@ body.no-scroll {
     overflow: visible;
 }
 
-/* Frame als Bild */
+/* Frame als Bild - Standard zentriert */
 .frame__container.frame--image {
     background: url("../assets/images/frame.png") center center;
     background-size: 100% 100%;
     background-repeat: no-repeat;
+}
+
+/* Bildfüllender Frame - deckt alles ab */
+.buzzer__container.fullscreen .frame__container.frame--image {
+    background-size: cover;
 }
 
 /* Frame als Video */
@@ -113,16 +127,22 @@ body.no-scroll {
     object-fit: fill;
 }
 
+/* Bildfüllender Frame mit Video */
+.buzzer__container.fullscreen .frame__container video {
+    object-fit: cover;
+}
+
 .frame__label {
     background: url("../assets/text/idle.svg") center center;
     background-size: contain;
     background-repeat: no-repeat;
+    background-color: transparent;  /* Explizit transparent */
     position: absolute;
-    top: 15%;  /* Relativ zum Frame */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 8%;
+    bottom: 0%;  /* Von unten positioniert */
+    left: 50%;  /* Zentriert */
+    transform: translateX(-50%);  /* Zentriert */
+    width: 80%;  /* Wie vorher */
+    height: 30%;  /* Mehr Höhe statt 8% */
     transition: background-image 0.3s ease;
     z-index: 60;
 }
@@ -208,18 +228,18 @@ body.no-scroll {
 
 .fancy {
     position: absolute;
-    top: 33%;  /* Relativ zum Frame */
+    top: 32%;  /* Etwas höher positioniert */
     left: 50%;
     transform: translateX(-50%);
     width: 64%;  /* 3x 17.65% + 2x 5.53% gap = 64% */
-    height: 31.36%;  /* 600px von 1913px = 31.36% vom Container */
+    height: 33%;  /* Original Höhe */
     text-align: left;
-    display: none;
+    display: block;  /* Immer sichtbar statt nur beim Spielen */
     z-index: 10;  /* Hinter Frame (50) */
 }
 
 .fancy.running {
-    display: block;
+    /* Keine Änderung nötig - ist schon sichtbar */
 }
 
 .fancy .jSlots-wrapper {
@@ -249,6 +269,7 @@ body.no-scroll {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent;  /* Explizit transparent */
 }
 
 .fancy .slot li img {
@@ -256,6 +277,7 @@ body.no-scroll {
     height: auto;
     max-height: 100%;
     object-fit: contain;
+    background: transparent;  /* Explizit transparent */
 }
 
 /* Padding nur für SVG-Symbole - sie haben meist keinen eingebauten Rand */
@@ -264,13 +286,25 @@ body.no-scroll {
     box-sizing: border-box;
 }
 
+/* PNG Symbole ohne Padding, um weißen Hintergrund zu vermeiden */
+.fancy .slot li img[src$=".png"],
+.fancy .slot li img[src$=".jpg"],
+.fancy .slot li img[src$=".jpeg"] {
+    padding: 0;
+}
+
 .fancy .slot li span {
     display: block;
     width: 100%;
+    background: transparent;  /* Explizit transparent */
 }
 
 .fancy .slot li:nth-child(n) {
     background-color: transparent;
+}
+
+.fancy .slot li .slot-item {
+    background: transparent;
 }
 
 /* ========================================
@@ -295,20 +329,18 @@ body.no-scroll {
     }
 }
 
-@keyframes bounceIn {
+@keyframes idleBlink {
     0% {
+        transform: translateX(-50%) scale(0.7);
         opacity: 0;
-        transform: translateY(-100%);
     }
-    40% {
-        opacity: 1; 
-        transform: translateY(10px);
-    }
-    70% {
-        transform: translateY(-5px);
+    60% {
+        transform: translateX(-50%) scale(1.08);
+        opacity: 1;
     }
     100% {
-        transform: translateY(0);
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
     }
 }
 
@@ -338,15 +370,15 @@ body.no-scroll {
 
 @keyframes pulse {
     0% {
-        transform: scale(1);
+        transform: translateX(-50%) scale(1);
         opacity: 1;
     }
     50% {
-        transform: scale(1.02);
+        transform: translateX(-50%) scale(1.02);
         opacity: 0.95;
     }
     100% {
-        transform: scale(1);
+        transform: translateX(-50%) scale(1);
         opacity: 1;
     }
 }
